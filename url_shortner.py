@@ -3,61 +3,36 @@
 import json
 from flask import Flask, request, jsonify
 
+records = {}
+
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def query_records():
-    name = request.args.get('name')
-    print(name)
-    with open('/tmp/urls.txt', 'r') as f:
-        data = f.read()
-        records = json.loads(data)
-        for record in records:
-            if record['name'] == name:
-                return jsonify(record)
-        return jsonify({'error': 'data not found'})
+    id = request.args.get('id')
+    if id is not None:
+        return records[id]
+    else:
+        return records
 
 @app.route('/', methods=['PUT'])
 def create_record():
-    record = json.loads(request.data)
-    with open('/tmp/urls.txt', 'r') as f:
-        data = f.read()
-    if not data:
-        records = [record]
-    else:
-        records = json.loads(data)
-        records.append(record)
-    with open('/tmp/urls.txt', 'w') as f:
-        f.write(json.dumps(records, indent=2))
-    return jsonify(record)
+    id = request.args['id']
+    url = request.args['url']
+    records[id] = url
+    return ""
 
 @app.route('/', methods=['POST'])
-def create_url():
-    url = request.args.get(url)
-    with open('/tmp/urls.txt', 'r') as f:
-        data = f.read()
-        records = json.loads(data)
-    for r in records:
-        if r['url'] == record['url']:
-            r['id'] = record['id']
-        new_records.append(r)
-    with open('/tmp/urls.txt', 'w') as f:
-        f.write(json.dumps(new_records, indent=2))
-    return jsonify(record)
+def create_short_url():
+    url = request.args['url']
+    id = str(hash(url))
+    records[id] = url
+    return id
 
 @app.route('/', methods=['DELETE'])
 def delte_record():
-    record = json.loads(request.data)
-    new_records = []
-    with open('/tmp/urls.txt', 'r') as f:
-        data = f.read()
-        records = json.loads(data)
-        for r in records:
-            if r['name'] == record['name']:
-                continue
-            new_records.append(r)
-    with open('/tmp/urls.txt', 'w') as f:
-        f.write(json.dumps(new_records, indent=2))
-    return jsonify(record)
+    id = request.args['id']
+    del records[id]
+    return ""
 
 app.run(debug=True)
