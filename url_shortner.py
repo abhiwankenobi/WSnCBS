@@ -4,6 +4,10 @@ import json
 from flask import Flask, request, jsonify, redirect
 import re
 from urllib.parse import urlparse
+import datetime
+
+
+
 
 def check_url(str1):
     regex = re.compile(
@@ -25,17 +29,22 @@ records = {}
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
-def query_records():
-    id = request.args.get('id')
-    if id not in records:
-        return ("", 404)
+def get_all_ids():
+    return records
+
+@app.route('/<id>', methods=['GET'])
+def get_url(id):
+
     if id is not None:
+        if id not in records:
+            return ("", 404)
         return (redirect(records[id]),301)
+        #return (redirect(records[id]),301)
     else:
         return records
 
 @app.route('/', methods=['PUT'])
-def create_record():
+def update_record():
     id = request.args['id']
     url = request.args['url']
     if id not in records:
@@ -45,16 +54,18 @@ def create_record():
 
 @app.route('/', methods=['POST'])
 def create_short_url():
+    date = str(datetime.datetime.now())
+    #print(date)
     url = request.args['url']
-    id = str(hash(url))
-    print(check_url(url))
+    id = str(hash(url+date))
+    #print(check_url(url))
     if check_url(url) is False:
         return ("Please enter a valid url", 400)
     records[id] = url
-    return id
+    return request.base_url+str(id)
 
 @app.route('/', methods=['DELETE'])
-def delte_record():
+def delete_record():
     id = request.args['id']
     if id not in records:
         return ("", 404)
