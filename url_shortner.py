@@ -8,22 +8,25 @@ import datetime
 import jwt
 
 SECRET_KEY = "SECRET"
+ALGORITHM = "HS256"
 
 def encode_auth_token(username,password):
     """
     Generates the Auth Token
-    :return: string
+    params: username,password
+    return: string
     """
     try:
         payload = {
             'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=60),
             'iat': datetime.datetime.utcnow(),
-            'sub': username
+            'username': username,
+            'password': password
         }
         return jwt.encode(
             payload,
             SECRET_KEY,
-            algorithm='HS256'
+            algorithm=ALGORITHM
         )
     except Exception as e:
         return e
@@ -32,17 +35,17 @@ def encode_auth_token(username,password):
 def decode_auth_token(auth_token):
     """
     Decodes the auth token
-    :param auth_token:
-    :return: integer|string
+    param: auth_token:
+    return: dict
     """
     try:
-        payload = jwt.decode(auth_token, SECRET_KEY,["HS256"])
+        payload = jwt.decode(auth_token, SECRET_KEY,[ALGORITHM])
         #print(payload)
-        return payload['sub']
+        return payload
     except jwt.ExpiredSignatureError:
-        return 'Signature expired. Please log in again.'
+        return 'Signature expired.'
     except jwt.InvalidTokenError:
-        return 'Invalid token. Please log in again.'
+        return 'Invalid token.'
 
 
 
@@ -61,8 +64,9 @@ def check_url(str1):
         return False
 
 
-#records = {}
+all_records = {}
 users = {}
+
 
 
 app = Flask(__name__)
@@ -71,23 +75,27 @@ app = Flask(__name__)
 def get_all_ids():
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
-    if auth_user in users.keys():
-        return users[auth_user][1]
+    if auth_user['username'] in users.keys():
+        return users[auth_user['username']][1]
 
 @app.route('/<id>', methods=['GET'])
 def get_url(id):
-    auth_token = request.headers.get('auth_token')
+    '''auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
-    if auth_user not in users.keys():
-        return ('',403)
+    if auth_user['username'] not in users.keys():
+        return ('',403)'''
     if id is not None:
-        if id not in users[auth_user][1]:
-            #print(users[auth_user][1])
-            return ("", 404)
-        return (redirect(users[auth_user][1][id]),301)
-        #return (redirect(users[auth_user][1][id]),301)
+        if id not in all_records.keys():
+            return ("ID NOT FOUND", 404)
+        '''if id not in users[auth_user['username']][1]:
+            #print(users[auth_user['username']][1])
+            return ("", 404)'''
+        all_records[id]
+        return (redirect(all_records[id]),301)
+        #return (redirect(users[auth_user['username']][1][id]),301)
     else:
-        return users[auth_user][1]
+        #return users[auth_user['username']][1]
+        return ("No ID", 404)
 
 @app.route('/', methods=['PUT'])
 def update_record():
@@ -95,20 +103,20 @@ def update_record():
     url = request.args['url']
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
-    if auth_user not in users.keys():
+    if auth_user['username'] not in users.keys():
         return ('',403)
-    if id not in users[auth_user][1]:
+    if id not in users[auth_user['username']][1]:
         return ("", 404)
-    users[auth_user][1][id] = url
+    users[auth_user['username']][1][id] = url
     return ""
 
 @app.route('/', methods=['POST'])
 def create_short_url():
     auth_token = request.headers.get('auth_token')
-    print("auth_token: "+auth_token)
-    auth_user = str(decode_auth_token(auth_token))
-    print(auth_user)
-    if auth_user not in users.keys():
+    #print("auth_token: "+auth_token)
+    auth_user = decode_auth_token(auth_token)
+    #print(auth_user)
+    if auth_user['username'] not in users.keys():
         return ('',403)
     date = str(datetime.datetime.now())
     #print(date)
@@ -117,19 +125,20 @@ def create_short_url():
     #print(check_url(url))
     if check_url(url) is False:
         return ("Please enter a valid url", 400)
-    users[auth_user][1][id] = url
+    users[auth_user['username']][1][id] = url
+    all_records[id] = url
     return request.base_url+str(id)
 
 @app.route('/', methods=['DELETE'])
 def delete_record():
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
-    if auth_user not in users.keys():
+    if auth_user['username'] not in users.keys():
         return ('',403)
     id = request.args['id']
-    if id not in users[auth_user][1]:
+    if id not in users[auth_user['username']][1]:
         return ("", 404)
-    del users[auth_user][1][id]
+    del users[auth_user['username']][1][id]
     return ('', 204)
 
 @app.route('/users', methods=['POST'])
