@@ -18,7 +18,7 @@ def encode_auth_token(username,password):
     """
     try:
         payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=60),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=300),
             'iat': datetime.datetime.utcnow(),
             'username': username,
             'password': password
@@ -112,6 +112,7 @@ def update_record():
     if id not in users[auth_user['username']][1]:
         return ("", 404)
     users[auth_user['username']][1][id] = url
+    all_records[id] = url
     return ""
 
 @app.route('/', methods=['POST'])
