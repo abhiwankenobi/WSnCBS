@@ -75,6 +75,8 @@ app = Flask(__name__)
 def get_all_ids():
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
+    if isinstance(auth_user, str):
+        return (auth_user,403)
     if auth_user['username'] in users.keys():
         return users[auth_user['username']][1]
 
@@ -103,6 +105,8 @@ def update_record():
     url = request.args['url']
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
+    if isinstance(auth_user, str):
+        return (auth_user,403)
     if auth_user['username'] not in users.keys():
         return ('',403)
     if id not in users[auth_user['username']][1]:
@@ -116,6 +120,8 @@ def create_short_url():
     #print("auth_token: "+auth_token)
     auth_user = decode_auth_token(auth_token)
     #print(auth_user)
+    if isinstance(auth_user, str):
+        return (auth_user,403)
     if auth_user['username'] not in users.keys():
         return ('',403)
     date = str(datetime.datetime.now())
@@ -133,12 +139,20 @@ def create_short_url():
 def delete_record():
     auth_token = request.headers.get('auth_token')
     auth_user = decode_auth_token(auth_token)
+    if isinstance(auth_user, str):
+        return (auth_user,403)
     if auth_user['username'] not in users.keys():
         return ('',403)
+    if len(request.args) == 0:
+        for key in users[auth_user['username']][1]:
+            del all_records[key]
+        users[auth_user['username']][1].clear()
+        return ('All records cleared for ' + auth_user['username']+'!',204)
     id = request.args['id']
     if id not in users[auth_user['username']][1]:
         return ("", 404)
     del users[auth_user['username']][1][id]
+    del all_records[id]
     return ('', 204)
 
 @app.route('/users', methods=['POST'])
